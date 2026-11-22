@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f6f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="img/15.jpg">
+<title>Pajama Stockroom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky header + search, photo-card grid of patterns; tapping a card opens a size grid with steppers. */
+:root {
+  --bg: #f3f6f3;
+  --surface: #ffffff;
+  --ink: #18241f;
+  --muted: #5d6b65;
+  --line: #dbe3de;
+  --pine: #1f5c45;
+  --pine-soft: #e2efe8;
+  --berry: #b8323a;
+  --berry-soft: #fbe7e8;
+  --amber: #9a6a00;
+  --amber-soft: #fdf1d6;
+  --on-pine: #ffffff;
+  --shadow: 0 1px 2px rgba(24,36,31,.06), 0 4px 14px rgba(24,36,31,.06);
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111814; --surface: #19231e; --ink: #e6eee9; --muted: #9aaba3; --line: #2b3832;
+    --pine: #5fbf95; --pine-soft: #1d3329; --berry: #f07a80; --berry-soft: #3a1d20;
+    --amber: #e8b850; --amber-soft: #352a12; --on-pine: #0d1a14;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111814; --surface: #19231e; --ink: #e6eee9; --muted: #9aaba3; --line: #2b3832;
+  --pine: #5fbf95; --pine-soft: #1d3329; --berry: #f07a80; --berry-soft: #3a1d20;
+  --amber: #e8b850; --amber-soft: #352a12; --on-pine: #0d1a14;
+  --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+h1, h2 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: grid; gap: 10px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-size: 1.5rem; }
+.brand small { display: block; color: var(--muted); font-size: .8rem; font-family: var(--f-body); font-weight: 500; letter-spacing: 0; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 600; min-height: 44px; white-space: nowrap; }
+.btn.primary { background: var(--pine); border-color: var(--pine); color: var(--on-pine); }
+.btn.danger { color: var(--berry); border-color: var(--berry); background: transparent; }
+.btn.danger.solid { background: var(--berry); color: var(--surface); }
+.btn:disabled { opacity: .5; cursor: default; }
+.search { display: flex; gap: 8px; }
+.search input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: .85rem; font-weight: 600; min-height: 36px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.summary { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: .85rem; padding-block: 4px 12px; }
+.summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.status { font-size: .85rem; color: var(--muted); padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px dashed var(--line); margin-bottom: 12px; }
+.status.warn { color: var(--amber); background: var(--amber-soft); border-color: transparent; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; box-shadow: var(--shadow); }
+.card .ph { aspect-ratio: 1; width: 100%; max-width: 100%; background: var(--pine-soft); position: relative; }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .meta { padding: 10px 11px 12px; display: grid; gap: 4px; min-width: 0; }
+.card .name { font-weight: 600; font-size: .92rem; line-height: 1.25; }
+.card .code { font-size: .72rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.card .tot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card .tot b { font-family: var(--f-display); font-size: 1.15rem; color: var(--ink); }
+.badge { position: absolute; top: 8px; left: 8px; font-size: .7rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); letter-spacing: .03em; }
+.badge.out { background: var(--berry); color: var(--surface); }
+.badge.low { background: var(--amber-soft); color: var(--amber); }
+.empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+
+/* detail */
+.detail { display: grid; gap: 18px; padding-top: 8px; }
+.back { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--pine); font-weight: 600; padding: 8px 0; min-height: 44px; }
+.hero { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; }
+.hero img { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
+.hero h2 { font-size: 1.4rem; }
+.hero .sub { color: var(--muted); font-size: .85rem; }
+.hero .big { font-family: var(--f-display); font-size: 1.9rem; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 6px; }
+.hero .big span { font-family: var(--f-body); font-size: .85rem; color: var(--muted); font-weight: 500; }
+.group h3 { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; display: flex; justify-content: space-between; }
+.sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.size { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; grid-template-columns: 44px 1fr 44px; grid-template-rows: auto auto; gap: 4px 6px; align-items: center; }
+.size .lbl { grid-column: 1 / -1; font-weight: 700; font-size: .85rem; display: flex; justify-content: space-between; }
+.size .lbl em { font-style: normal; font-weight: 600; font-size: .7rem; padding: 1px 7px; border-radius: 999px; }
+.size.out { background: var(--berry-soft); border-color: transparent; }
+.size.out .lbl em { color: var(--berry); }
+.size.low { background: var(--amber-soft); border-color: transparent; }
+.size.low .lbl em { color: var(--amber); }
+.step { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.3rem; font-weight: 600; line-height: 1; }
+.size input { width: 100%; min-width: 0; height: 44px; text-align: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.saving { font-size: .8rem; color: var(--muted); min-height: 1.2em; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--berry-soft); padding: 10px 12px; border-radius: 10px; color: var(--berry); font-weight: 600; }
+
+/* form */
+form.edit { display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+form.edit label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; }
+form.edit input[type=text] { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; background: var(--bg); }
+form.edit .hint { font-weight: 400; color: var(--muted); font-size: .8rem; }
+.preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.err { color: var(--berry); font-size: .85rem; }
+
+/* by-size table */
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+table { border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td.z { color: var(--berry); }
+tfoot td { font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: transform .15s; } .card:active { transform: scale(.98); } }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; -webkit-text-size-adjust: 100%; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+footer.backup { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; color: var(--muted); font-size: .85rem; }
+footer.backup .row { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Pajama Stockroom<small id="sub">Christmas collection · saved on this phone</small></h1>
+      <button class="btn primary" id="addBtn" hidden>+ Pattern</button>
+    </div>
+    <div class="search" id="searchRow">
+      <input id="q" type="search" placeholder="Search patterns or codes" autocomplete="off">
+    </div>
+    <div class="chips" id="chips" role="toolbar" aria-label="Filter by size"></div>
+  </header>
+  <main id="view"></main>
+  <footer class="backup" id="backup">
+    <div><b style="color:var(--ink)">Backup</b> · Counts are saved in this browser only. Save a backup file now and then so you don't lose them if the browser data is cleared.</div>
+    <div class="row">
+      <button class="btn" id="exportBtn" type="button">Save backup file</button>
+      <label class="btn" for="importFile" style="display:inline-flex;align-items:center">Restore from backup</label>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div id="backupMsg" aria-live="polite"></div>
+  </footer>
+</div>
+
+<script>
+const KIDS = ["4Y","5Y","6Y","7Y","8Y","9Y","10Y","11Y","12Y","13Y"];
+const ADULTS = ["S","M","L","XL","2XL","3XL"];
+const SIZES = [...KIDS, ...ADULTS];
+const LOW = 2;
+
+const state = {
+  patterns: new Map(),   // id -> data
+  pending: new Map(),    // id -> {size: n}
+  loaded: false, error: null, slow: false,
+  canWrite: null, assets: null, db: null,
+  q: "", filter: "all", showTable: false,
+  confirmDelete: false, editing: false,
+};
+const $ = (s, el = document) => el.querySelector(s);
+const view = $("#view");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const photoSrc = p => !p.photo ? "" : p.photo;
+
+function sizesOf(id) {
+  const p = state.patterns.get(id) || {};
+  return { ...(p.sizes || {}), ...(state.pending.get(id) || {}) };
+}
+function total(id) { const s = sizesOf(id); return SIZES.reduce((a, k) => a + (Number(s[k]) || 0), 0); }
+function inStockCount(id) { const s = sizesOf(id); return SIZES.filter(k => (Number(s[k]) || 0) > 0).length; }
+function sorted() { return [...state.patterns.entries()].sort((a, b) => (a[1].order ?? 999) - (b[1].order ?? 999) || String(a[1].name).localeCompare(b[1].name)); }
+
+/* ---------- chips ---------- */
+function renderChips() {
+  const opts = [["all","All"],["out","Has sold-out sizes"],...SIZES.map(s => [s, s])];
+  $("#chips").innerHTML = opts.map(([v, l]) => `<button class="chip" data-f="${v}" aria-pressed="${state.filter === v}">${l}</button>`).join("");
+}
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  state.filter = b.dataset.f; renderChips(); render();
+});
+$("#q").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+/* ---------- routing ---------- */
+function route() { return location.hash.replace(/^#/, ""); }
+window.addEventListener("hashchange", () => { state.confirmDelete = false; state.editing = false; render(); window.scrollTo(0, 0); });
+function go(h) { if (route() === h) render(); else location.hash = h; }
+
+function render() {
+  const r = route();
+  const onList = !(r.startsWith("p-") || r === "new");
+  $("#searchRow").hidden = !onList; $("#chips").hidden = !onList; $("#backup").hidden = !onList;
+  $("#addBtn").hidden = !(onList && state.canWrite !== false && state.db);
+  if (r === "new") return renderForm(null);
+  if (r.startsWith("p-")) {
+    const id = r.slice(2);
+    if (state.patterns.has(id)) return state.editing ? renderForm(id) : renderDetail(id);
+    if (!state.loaded) { view.innerHTML = `<p class="empty">Loading pattern…</p>`; return; }
+  }
+  renderList();
+}
+
+/* ---------- list ---------- */
+function statusHtml() {
+  if (state.error) return `<div class="status warn">${esc(state.error)}</div>`;
+  if (!state.loaded && state.slow) return `<div class="status warn">Can't reach the inventory yet. Counts will appear when the connection comes back.</div>`;
+  if (state.canWrite === false) return `<div class="status">You can view stock but not change it. Ask the owner for Contributor access to update counts.</div>`;
+  return "";
+}
+function renderList() {
+  if (!state.loaded && !state.patterns.size) {
+    view.innerHTML = statusHtml() + `<div class="empty"><p><b>Your patterns will show up here.</b></p><p>Each pattern gets a photo card with its total pieces. Tap one to set how many you have in each size, from 4Y to 3XL.</p></div>`;
+    return;
+  }
+  let list = sorted();
+  if (state.q) list = list.filter(([, p]) => (p.name + " " + (p.code || "") + " " + (p.color || "")).toLowerCase().includes(state.q));
+  if (state.filter === "out") list = list.filter(([id]) => inStockCount(id) < SIZES.length);
+  else if (state.filter !== "all") list = list.filter(([id]) => (Number(sizesOf(id)[state.filter]) || 0) > 0);
+
+  const all = sorted();
+  const pieces = all.reduce((a, [id]) => a + total(id), 0);
+  const sel = SIZES.includes(state.filter) ? state.filter : null;
+  const summary = `<div class="summary">
+    <span><b>${all.length}</b> patterns</span>
+    <span><b>${pieces.toLocaleString()}</b> pieces in stock</span>
+    ${sel ? `<span><b>${all.reduce((a,[id]) => a + (Number(sizesOf(id)[sel]) || 0), 0)}</b> in size ${sel}</span>` : ""}
+    <button class="chip" id="tblBtn" aria-pressed="${state.showTable}">${state.showTable ? "Show photos" : "Table by size"}</button>
+  </div>`;
+
+  if (state.showTable) { view.innerHTML = statusHtml() + summary + tableHtml(list); bindList(); return; }
+
+  const cards = list.map(([id, p]) => {
+    const t = total(id), n = inStockCount(id);
+    const sz = sel ? (Number(sizesOf(id)[sel]) || 0) : null;
+    let badge = "";
+    if (sel) badge = `<span class="badge ${sz === 0 ? "out" : sz <= LOW ? "low" : ""}">${sel}: ${sz}</span>`;
+    else if (t === 0) badge = `<span class="badge out">No stock</span>`;
+    return `<button class="card" data-id="${esc(id)}">
+      <div class="ph">${p.photo ? `<img src="${esc(photoSrc(p))}" alt="${esc(p.name)}" loading="lazy">` : ""}${badge}</div>
+      <div class="meta">
+        ${p.code ? `<span class="code">${esc(p.code)}</span>` : ""}
+        <span class="name">${esc(p.name)}</span>
+        <span class="tot"><span><b>${t}</b> pcs</span><span>${n}/${SIZES.length} sizes</span></span>
+      </div></button>`;
+  }).join("");
+  view.innerHTML = statusHtml() + summary + (list.length ? `<div class="grid">${cards}</div>` : `<p class="empty">No patterns match.</p>`);
+  bindList();
+}
+function bindList() {
+  view.querySelectorAll(".card").forEach(c => c.addEventListener("click", () => go("p-" + c.dataset.id)));
+  const tb = $("#tblBtn"); if (tb) tb.addEventListener("click", () => { state.showTable = !state.showTable; render(); });
+  view.querySelectorAll("tr[data-id]").forEach(r => r.addEventListener("click", () => go("p-" + r.dataset.id)));
+}
+function tableHtml(list) {
+  const head = `<tr><th>Pattern</th>${SIZES.map(s => `<th>${s}</th>`).join("")}<th>Total</th></tr>`;
+  const rows = list.map(([id, p]) => { const s = sizesOf(id);
+    return `<tr data-id="${esc(id)}" style="cursor:pointer"><td>${esc(p.name)}</td>${SIZES.map(k => { const v = Number(s[k]) || 0; return `<td class="${v ? "" : "z"}">${v}</td>`; }).join("")}<td><b>${total(id)}</b></td></tr>`; }).join("");
+  const foot = `<tr><td>All</td>${SIZES.map(k => `<td>${list.reduce((a,[id]) => a + (Number(sizesOf(id)[k]) || 0), 0)}</td>`).join("")}<td>${list.reduce((a,[id]) => a + total(id), 0)}</td></tr>`;
+  return `<div class="tbl-wrap"><table><thead>${head}</thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></div>`;
+}
+
+/* ---------- detail ---------- */
+function sizeTile(id, k, ro) {
+  const v = Number(sizesOf(id)[k]) || 0;
+  const cls = v === 0 ? "out" : v <= LOW ? "low" : "";
+  const tag = v === 0 ? "Sold out" : v <= LOW ? "Low" : "";
+  return `<div class="size ${cls}" data-k="${k}">
+    <div class="lbl"><span>${k}</span><em>${tag}</em></div>
+    <button class="step" data-d="-1" aria-label="One less ${k}" ${ro || v === 0 ? "disabled" : ""}>−</button>
+    <input id="sz-${k}" type="number" inputmode="numeric" min="0" step="1" value="${v}" aria-label="Pieces in size ${k}" ${ro ? "disabled" : ""}>
+    <button class="step" data-d="1" aria-label="One more ${k}" ${ro ? "disabled" : ""}>+</button>
+  </div>`;
+}
+function renderDetail(id) {
+  const p = state.patterns.get(id);
+  const ro = state.canWrite === false || !state.db;
+  const s = sizesOf(id);
+  const kidsT = KIDS.reduce((a, k) => a + (Number(s[k]) || 0), 0), adT = ADULTS.reduce((a, k) => a + (Number(s[k]) || 0), 0);
+  view.innerHTML = `<section class="detail">
+    <div><button class="back" id="back">← All patterns</button></div>
+    <div class="hero">
+      ${p.photo ? `<img src="${esc(photoSrc(p))}" alt="${esc(p.name)}">` : `<div class="preview"></div>`}
+      <div style="min-width:0">
+        ${p.code ? `<div class="sub">${esc(p.code)}</div>` : ""}
+        <h2>${esc(p.name)}</h2>
+        <div class="big" id="bigTotal">${total(id)} <span>pieces · ${inStockCount(id)} of ${SIZES.length} sizes in stock</span></div>
+      </div>
+    </div>
+    ${statusHtml()}
+    <div class="group"><h3><span>Kids · years</span><span id="kidsT">${kidsT} pcs</span></h3><div class="sizes">${KIDS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="group"><h3><span>Adults</span><span id="adT">${adT} pcs</span></h3><div class="sizes">${ADULTS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="saving" id="saving" aria-live="polite"></div>
+    ${ro ? "" : `<div class="actions">
+      <button class="btn" id="editBtn">Edit name or photo</button>
+      ${state.confirmDelete
+        ? `<div class="confirm">Delete “${esc(p.name)}” and all its counts? <button class="btn danger solid" id="delYes">Delete</button><button class="btn" id="delNo">Keep it</button></div>`
+        : `<button class="btn danger" id="delBtn">Delete pattern</button>`}
+    </div>`}
+  </section>`;
+  $("#back").onclick = () => go("");
+  view.querySelectorAll(".size").forEach(tile => {
+    const k = tile.dataset.k, inp = $("input", tile);
+    tile.querySelectorAll(".step").forEach(b => b.onclick = () => setCount(id, k, (Number(sizesOf(id)[k]) || 0) + Number(b.dataset.d)));
+    inp.addEventListener("change", () => setCount(id, k, inp.value));
+    inp.addEventListener("focus", () => inp.select());
+  });
+  const eb = $("#editBtn"); if (eb) eb.onclick = () => { state.editing = true; render(); };
+  const db = $("#delBtn"); if (db) db.onclick = () => { state.confirmDelete = true; render(); };
+  const dn = $("#delNo"); if (dn) dn.onclick = () => { state.confirmDelete = false; render(); };
+  const dy = $("#delYes"); if (dy) dy.onclick = () => deletePattern(id);
+}
+function patchDetail(id) {
+  // update numbers in place without stealing focus
+  view.querySelectorAll(".size").forEach(tile => {
+    const k = tile.dataset.k, v = Number(sizesOf(id)[k]) || 0, inp = $("input", tile);
+    if (document.activeElement !== inp) inp.value = v;
+    tile.className = "size " + (v === 0 ? "out" : v <= LOW ? "low" : "");
+    $(".lbl em", tile).textContent = v === 0 ? "Sold out" : v <= LOW ? "Low" : "";
+    const minus = $('.step[data-d="-1"]', tile); if (!inp.disabled) minus.disabled = v === 0;
+  });
+  const s = sizesOf(id);
+  const bt = $("#bigTotal"); if (bt) bt.innerHTML = `${total(id)} <span>pieces · ${inStockCount(id)} of ${SIZES.length} sizes in stock</span>`;
+  const kt = $("#kidsT"); if (kt) kt.textContent = KIDS.reduce((a, k) => a + (Number(s[k]) || 0), 0) + " pcs";
+  const at = $("#adT"); if (at) at.textContent = ADULTS.reduce((a, k) => a + (Number(s[k]) || 0), 0) + " pcs";
+}
+
+/* ---------- saving counts: one write at a time per pattern ---------- */
+const timers = new Map(), inflight = new Set();
+function setCount(id, k, raw) {
+  let v = Math.max(0, Math.floor(Number(raw)));
+  if (!Number.isFinite(v)) v = 0;
+  const pend = state.pending.get(id) || {}; pend[k] = v; state.pending.set(id, pend);
+  patchDetail(id); setSaving("Saving…");
+  clearTimeout(timers.get(id));
+  timers.set(id, setTimeout(() => flush(id), 500));
+}
+async function flush(id) {
+  if (inflight.has(id)) { timers.set(id, setTimeout(() => flush(id), 300)); return; }
+  const pend = state.pending.get(id); if (!pend) return;
+  const batch = { ...pend };
+  inflight.add(id);
+  try {
+    await state.db.doc("patterns/" + id).update({ sizes: batch, updatedAt: new Date().toISOString() });
+    const cur = state.pending.get(id) || {};
+    for (const k in batch) if (cur[k] === batch[k]) delete cur[k];
+    if (Object.keys(cur).length) state.pending.set(id, cur); else state.pending.delete(id);
+    setSaving("Saved");
+  } catch (e) {
+    if (e && e.code === "invalid_argument" && state.canWrite == null) { state.canWrite = false; state.pending.delete(id); render(); }
+    else setSaving("Couldn't save. Check your connection and change the number again.");
+  } finally { inflight.delete(id); }
+}
+function setSaving(t) { const el = $("#saving"); if (el) el.textContent = t; }
+
+async function deletePattern(id) {
+  try { await state.db.doc("patterns/" + id).delete(); state.patterns.delete(id); go(""); }
+  catch { setSaving("Couldn't delete. Try again."); }
+}
+
+/* ---------- add / edit form ---------- */
+function renderForm(id) {
+  const p = id ? state.patterns.get(id) : { name: "", code: "" };
+  const canPhoto = !!state.assets;
+  view.innerHTML = `<section class="detail">
+    <div><button class="back" id="back">← ${id ? "Back to pattern" : "All patterns"}</button></div>
+    <h2>${id ? "Edit pattern" : "New pattern"}</h2>
+    <form class="edit" id="pf">
+      <label for="f-name">Name<input id="f-name" type="text" required value="${esc(p.name)}" placeholder="e.g. Gingerbread Houses"></label>
+      <label for="f-code">Style code <span class="hint">Optional. The code on the tag, like A-471.</span><input id="f-code" type="text" value="${esc(p.code || "")}"></label>
+      ${canPhoto ? `<label for="f-photo">Photo <span class="hint">Take one with your phone camera or pick from your gallery.</span>
+        <input id="f-photo" type="file" accept="image/*"></label>` : `<p class="hint">Only editors can add photos. You can still add the name now.</p>`}
+      <img class="preview" id="pv" alt="" ${p.photo ? `src="${esc(photoSrc(p))}"` : "hidden"}>
+      ${id ? "" : `<p class="hint">All ${SIZES.length} sizes (4Y–13Y and S–3XL) start at 0. Set the counts after saving.</p>`}
+      <div class="err" id="ferr"></div>
+      <div class="actions" style="border:0;padding:0"><button class="btn primary" id="saveP" type="submit">${id ? "Save changes" : "Add pattern"}</button></div>
+    </form></section>`;
+  $("#back").onclick = () => { state.editing = false; id ? render() : go(""); };
+  let file = null;
+  const fp = $("#f-photo");
+  if (fp) fp.onchange = () => { file = fp.files[0] || null; if (file) { const pv = $("#pv"); pv.src = URL.createObjectURL(file); pv.hidden = false; } };
+  $("#pf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#f-name").value.trim(), code = $("#f-code").value.trim();
+    if (!name) { $("#ferr").textContent = "Give the pattern a name."; return; }
+    const btn = $("#saveP"); btn.disabled = true; btn.textContent = "Saving…"; $("#ferr").textContent = "";
+    try {
+      let photo = p.photo || "";
+      if (file && state.assets) photo = (await state.assets.upload(await shrink(file), { type: "image/jpeg" })).id;
+      if (id) {
+        await state.db.doc("patterns/" + id).update({ name, code, photo, updatedAt: new Date().toISOString() });
+        state.editing = false; render();
+      } else {
+        const order = Math.max(0, ...[...state.patterns.values()].map(x => x.order || 0)) + 1;
+        const ref = state.db.collection("patterns").doc();
+        await ref.set({ name, code, photo, order, sizes: Object.fromEntries(SIZES.map(s => [s, 0])), updatedAt: new Date().toISOString() });
+        go("p-" + ref.id);
+      }
+    } catch (err) {
+      const c = err && err.code;
+      $("#ferr").textContent = c === "too_large" ? "That photo is too big. Pick a smaller one."
+        : c === "quota_or_state" ? "Photo storage is full. Delete unused patterns first."
+        : "Couldn't save. Check your connection and try again.";
+      btn.disabled = false; btn.textContent = id ? "Save changes" : "Add pattern";
+    }
+  });
+}
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const m = 800, r = Math.min(1, m / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? res(b) : rej(new Error("encode")), "image/jpeg", 0.82);
+    };
+    img.onerror = rej; img.src = URL.createObjectURL(file);
+  });
+}
+
+$("#addBtn").onclick = () => go("new");
+
+/* ---------- local store (this phone only) ---------- */
+const KEY = "pajama-stockroom-v1";
+const SEED = [
+  ["p01","Santa & Candy Canes","","red"],["p02","Navy Plaid Button-Up","","navy red green"],
+  ["p03","Merry Christmas Raglan","","grey"],["p04","Red Tartan Button-Up","","red"],
+  ["p05","Cream & Green Plaid Button-Up","","cream green"],["p06","Fair Isle Snowmen","","red"],
+  ["p07","Merry Christmas Reindeer","","navy"],["p08","Mittens & Snowflakes","","white"],
+  ["p09","Nordic Reindeer","","red blue"],["p10","Trees & Snowflakes","A-471","white green"],
+  ["p11","Santa, Elves & Reindeer","","green"],["p12","Penguins & Ornaments","L-003F","grey"],
+  ["p13","Happy New Year Bears","A-440","navy"],["p14","Howdy Holidays","L-004","maroon"],
+  ["p15","Christmas Tree","L-001","red"],
+];
+function seedData() {
+  const o = {};
+  SEED.forEach(([id, name, code, color], i) => o[id] = { name, code, color, photo: `img/${id.slice(1)}.jpg`, order: i + 1, sizes: Object.fromEntries(SIZES.map(s => [s, 0])) });
+  return o;
+}
+let store, storageOk = true;
+try { store = JSON.parse(localStorage.getItem(KEY)); } catch { storageOk = false; }
+if (!store || typeof store !== "object") store = seedData();
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(store)); return true; }
+  catch { state.error = "This browser won't save data (private mode or storage full). Changes will be lost when you close the page."; return false; }
+}
+function publish() {
+  state.patterns = new Map(Object.entries(store));
+  const r = route();
+  if (r.startsWith("p-") && !state.editing && $("#bigTotal") && state.patterns.has(r.slice(2))) patchDetail(r.slice(2));
+  else if (r !== "new" && !state.editing) render();
+}
+const merge = (a, b) => { for (const k in b) a[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") ? merge({ ...a[k] }, b[k]) : b[k]; return a; };
+const newId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const docRef = id => ({
+  id,
+  async set(d) { store[id] = d; persist(); publish(); },
+  async update(d) { if (!store[id]) throw { code: "invalid_argument" }; store[id] = merge({ ...store[id] }, d); persist(); publish(); },
+  async delete() { delete store[id]; persist(); publish(); },
+});
+const localDb = {
+  doc: path => docRef(path.split("/")[1]),
+  collection: () => ({ doc: id => docRef(id || newId()) }),
+};
+const localAssets = {
+  // photos are stored inline as small JPEG data URLs
+  async upload(blob) { return { id: await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); }) }; },
+};
+
+/* ---------- backup ---------- */
+$("#exportBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify({ app: "pajama-stockroom", savedAt: new Date().toISOString(), patterns: store }, null, 1)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `pajama-stock-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove();
+  $("#backupMsg").textContent = "Backup file saved to your downloads.";
+};
+$("#importFile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d || typeof d.patterns !== "object") throw 0;
+    store = d.patterns; persist(); publish();
+    $("#backupMsg").textContent = `Restored ${Object.keys(store).length} patterns from ${f.name}.`;
+  } catch { $("#backupMsg").textContent = "That file isn't a Pajama Stockroom backup."; }
+  e.target.value = "";
+};
+
+/* ---------- boot ---------- */
+state.db = localDb; state.assets = localAssets; state.canWrite = true; state.loaded = true;
+if (!storageOk) state.error = "This browser won't save data (private mode?). Changes will be lost when you close the page.";
+renderChips(); persist(); publish();
+</script>
+</body>
+</html>
