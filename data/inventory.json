@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T18:34:15.331Z",
+ "updatedAt": "2026-11-22T18:35:50.229Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -21,13 +21,13 @@
     "13Y": 1,
     "S": 1,
     "M": 1,
-    "L": 0,
+    "L": 1,
     "XL": 1,
     "2XL": 1,
-    "3XL": 0,
+    "3XL": 1,
     "3Y": 2
    },
-   "updatedAt": "2026-11-22T18:16:25.913Z"
+   "updatedAt": "2026-11-22T18:35:06.488Z"
   },
   "p02": {
    "name": "Navy Plaid Button-Up",
