@@ -284,9 +284,6 @@ function renderDetail(id) {
     <div class="saving" id="saving" aria-live="polite"></div>
     ${ro ? "" : `<div class="actions">
       <button class="btn" id="editBtn">Edit name or photo</button>
-      ${state.confirmDelete
-        ? `<div class="confirm">Delete “${esc(p.name)}” and all its counts? <button class="btn danger solid" id="delYes">Delete</button><button class="btn" id="delNo">Keep it</button></div>`
-        : `<button class="btn danger" id="delBtn">Delete pattern</button>`}
     </div>`}
   </section>`;
   $("#back").onclick = () => go("");
@@ -297,9 +294,6 @@ function renderDetail(id) {
     inp.addEventListener("focus", () => inp.select());
   });
   const eb = $("#editBtn"); if (eb) eb.onclick = () => { state.editing = true; render(); };
-  const db = $("#delBtn"); if (db) db.onclick = () => { state.confirmDelete = true; render(); };
-  const dn = $("#delNo"); if (dn) dn.onclick = () => { state.confirmDelete = false; render(); };
-  const dy = $("#delYes"); if (dy) dy.onclick = () => deletePattern(id);
 }
 function patchDetail(id) {
   // update numbers in place without stealing focus
@@ -390,7 +384,7 @@ function renderForm(id) {
     } catch (err) {
       const c = err && err.code;
       $("#ferr").textContent = c === "too_large" ? "That photo is too big. Pick a smaller one."
-        : c === "quota_or_state" ? "Photo storage is full. Delete unused patterns first."
+        : c === "quota_or_state" ? "Photo storage is full. Try a smaller photo."
         : "Couldn't save. Check your connection and try again.";
       btn.disabled = false; btn.textContent = id ? "Save changes" : "Add pattern";
     }
