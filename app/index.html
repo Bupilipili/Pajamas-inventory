@@ -79,7 +79,7 @@ header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; b
 .empty { padding: 40px 16px; text-align: center; color: var(--muted); }
 
 /* detail */
-.detail { display: grid; gap: 18px; padding-top: 8px; }
+.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-top: 8px; }
 .back { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--pine); font-weight: 600; padding: 8px 0; min-height: 44px; }
 .hero { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; }
 .hero img { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
@@ -142,6 +142,24 @@ button.ov { font: inherit; color: inherit; cursor: pointer; }
 .sale .amt { font-variant-numeric: tabular-nums; font-weight: 600; }
 .sale .undo { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 6px 10px; font-size: .8rem; min-height: 36px; color: var(--muted); }
 .day { padding: 8px 12px; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line); font-weight: 600; }
+.sheet-bg { position: fixed; inset: 0; z-index: 20; background: rgba(10,20,15,.45); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--surface); color: var(--ink); width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; display: grid; gap: 12px;
+  padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet h2 { font-size: 1.25rem; }
+.sheet .sub { color: var(--muted); font-size: .85rem; margin-top: -8px; }
+.sheet label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; }
+.sheet input { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 48px; background: var(--bg); font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; width: 100%; }
+.sheet .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.sheet .note { font-size: .85rem; color: var(--muted); min-height: 1.2em; }
+.sheet .note b { color: var(--berry); }
+.sheet .acts { display: flex; gap: 8px; } .sheet .acts .btn { flex: 1; }
+.sale .amt s { color: var(--muted); font-weight: 400; font-size: .78rem; display: block; text-align: right; }
+.sale .amt { text-align: right; border: 0; background: none; padding: 4px 0; cursor: pointer; }
+.sale .amt:disabled { cursor: default; }
+.prices { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.prices .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.prices label { display: grid; gap: 4px; font-size: .8rem; font-weight: 600; color: var(--muted); }
+.prices input { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; background: var(--bg); font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; width: 100%; min-width: 0; }
 @media (prefers-reduced-motion: no-preference) { .card { transition: transform .15s; } .card:active { transform: scale(.98); } }
 </style>
 
@@ -160,12 +178,14 @@ button.ov { font: inherit; color: inherit; cursor: pointer; }
 </div>
 
 <script>
-const KIDS = ["4Y","5Y","6Y","7Y","8Y","9Y","10Y","11Y","12Y","13Y"];
+const KIDS = ["3Y","4Y","5Y","6Y","7Y","8Y","9Y","10Y","11Y","12Y","13Y"];
 const ADULTS = ["S","M","L","XL","2XL","3XL"];
 const SIZES = [...KIDS, ...ADULTS];
 const LOW = 2;
-const PRICE_KIDS = 25000, PRICE_ADULT = 35000;
-const priceOf = k => ADULTS.includes(k) ? PRICE_ADULT : PRICE_KIDS;
+const DEFAULT_PRICES = { kids: 25000, adult: 35000 };
+const prices = () => ({ ...DEFAULT_PRICES, ...(state.prices || {}) });
+const priceOf = k => ADULTS.includes(k) ? prices().adult : prices().kids;
+const fullOf = x => Number(x.full) || Number(x.price) || 0;
 const money = n => Math.round(n).toLocaleString("en-US") + "/=";
 
 const state = {
@@ -330,8 +350,8 @@ function renderDetail(id) {
       </div>
     </div>
     ${statusHtml()}
-    <div class="group"><h3><span>Kids · years · ${money(PRICE_KIDS)} each</span><span id="kidsT">${kidsT} pcs</span></h3><div class="sizes">${KIDS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
-    <div class="group"><h3><span>Adults · ${money(PRICE_ADULT)} each</span><span id="adT">${adT} pcs</span></h3><div class="sizes">${ADULTS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="group"><h3><span>Kids · years · ${money(prices().kids)} each</span><span id="kidsT">${kidsT} pcs</span></h3><div class="sizes">${KIDS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="group"><h3><span>Adults · ${money(prices().adult)} each</span><span id="adT">${adT} pcs</span></h3><div class="sizes">${ADULTS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
     <div class="saving" id="saving" aria-live="polite"></div>
     ${ro ? "" : `<div class="actions">
       <button class="btn" id="editBtn">Edit name or photo</button>
@@ -372,15 +392,62 @@ const newSaleId = () => "s" + Date.now().toString(36) + Math.random().toString(3
 function queueSale(id, sid, sale) {
   const ps = state.pendingSales.get(id) || {}; ps[sid] = sale; state.pendingSales.set(id, ps);
 }
+const saleBody = x => { const { sid, id, ...rest } = x; return rest; };
+const parseAmount = v => Math.max(0, Math.round(Number(String(v).replace(/[^0-9.]/g, "")) || 0));
+function openPriceSheet({ title, sub, price, full, confirm, onConfirm }) {
+  closeSheet();
+  const bg = document.createElement("div"); bg.className = "sheet-bg"; bg.id = "sheet";
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle">${esc(title)}</h2><div class="sub">${esc(sub)} · full price ${money(full)}</div>
+    <label for="sheetPrice">Price for this piece<input id="sheetPrice" type="text" inputmode="numeric" autocomplete="off" value="${price.toLocaleString("en-US")}"></label>
+    <div class="quick">
+      <button class="chip" type="button" data-p="${full}">Full price</button>
+      <button class="chip" type="button" data-p="${full - 5000}">−5,000</button>
+      <button class="chip" type="button" data-p="${Math.round(full * 0.9 / 500) * 500}">−10%</button>
+      <button class="chip" type="button" data-p="${Math.round(full * 0.8 / 500) * 500}">−20%</button>
+    </div>
+    <div class="note" id="sheetNote" aria-live="polite"></div>
+    <div class="acts"><button class="btn" type="button" id="sheetCancel">Cancel</button><button class="btn primary" type="button" id="sheetOk"></button></div>
+  </div>`;
+  document.body.appendChild(bg);
+  const inp = $("#sheetPrice"), ok = $("#sheetOk"), note = $("#sheetNote");
+  const upd = () => { const v = parseAmount(inp.value); ok.textContent = `${confirm} · ${money(v)}`; note.innerHTML = v < full ? `Discount <b>${money(full - v)}</b>` : v > full ? `${money(v - full)} above full price` : ""; };
+  bg.querySelectorAll(".quick .chip").forEach(c => c.onclick = () => { inp.value = Math.max(0, Number(c.dataset.p)).toLocaleString("en-US"); upd(); });
+  inp.addEventListener("input", upd);
+  inp.addEventListener("blur", () => { inp.value = parseAmount(inp.value).toLocaleString("en-US"); });
+  bg.addEventListener("click", e => { if (e.target === bg) closeSheet(); });
+  bg.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); if (e.key === "Enter") ok.click(); });
+  $("#sheetCancel").onclick = closeSheet;
+  ok.onclick = () => { const v = parseAmount(inp.value); closeSheet(); onConfirm(v); };
+  upd(); inp.focus(); inp.select();
+}
+function closeSheet() { const el = $("#sheet"); if (el) el.remove(); }
 function sell(id, k) {
   const v = Number(sizesOf(id)[k]) || 0; if (v <= 0) return;
-  queueSale(id, newSaleId(), { t: new Date().toISOString(), size: k, price: priceOf(k) });
-  setCount(id, k, v - 1);
-  setSaving(`Sold 1 × ${k} for ${money(priceOf(k))}`);
+  const p = state.patterns.get(id) || {}, full = priceOf(k);
+  openPriceSheet({ title: `Sell 1 × ${k}`, sub: p.name || "", price: full, full, confirm: "Confirm sale", onConfirm: price => {
+    const now = Number(sizesOf(id)[k]) || 0; if (now <= 0) return;
+    queueSale(id, newSaleId(), { t: new Date().toISOString(), size: k, price, full });
+    setCount(id, k, now - 1);
+    setSaving(`Sold 1 × ${k} for ${money(price)}${price < full ? ` (discount ${money(full - price)})` : ""}`);
+  } });
+}
+function editSalePrice(x) {
+  const p = state.patterns.get(x.id) || {}, full = fullOf(x);
+  openPriceSheet({ title: `Change price · ${x.size}`, sub: p.name || "", price: Number(x.price) || 0, full, confirm: "Save price", onConfirm: price => {
+    queueSale(x.id, x.sid, { ...saleBody(x), full, price });
+    clearTimeout(timers.get(x.id)); timers.set(x.id, setTimeout(() => flush(x.id), 300));
+    if (route() === "sales") renderSales();
+    setSaving(`Price changed to ${money(price)}`);
+  } });
 }
 function undoSale(x) {
-  queueSale(x.id, x.sid, { t: x.t, size: x.size, price: x.price, voided: true });
+  queueSale(x.id, x.sid, { ...saleBody(x), voided: true });
   setCount(x.id, x.size, (Number(sizesOf(x.id)[x.size]) || 0) + 1);
+}
+async function savePrices(kids, adult) {
+  state.prices = { kids, adult };
+  await state.db.doc("settings/prices").set({ kids, adult, updatedAt: new Date().toISOString() });
 }
 function setCount(id, k, raw) {
   let v = Math.max(0, Math.floor(Number(raw)));
@@ -419,6 +486,8 @@ function setSaving(t) { const el = $("#saving"); if (el) el.textContent = t; }
 function renderSales() {
   const sales = allSales();
   const sum = xs => xs.reduce((a, x) => a + (x.price || 0), 0);
+  const disc = sales.reduce((a, x) => a + Math.max(0, fullOf(x) - (x.price || 0)), 0);
+  const pr = prices();
   const today = sales.filter(x => sameDay(x.t));
   const kids = sales.filter(x => KIDS.includes(x.size)), adults = sales.filter(x => ADULTS.includes(x.size));
   const ro = state.canWrite === false || !state.db;
@@ -429,23 +498,31 @@ function renderSales() {
     const d = new Date(x.t), day = d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     if (day !== lastDay) { rows += `<div class="day">${sameDay(x.t) ? "Today" : esc(day)}</div>`; lastDay = day; }
     const p = state.patterns.get(x.id) || {};
-    rows += `<div class="sale"><div class="w">${esc(p.name || "Pattern")} · <b>${esc(x.size)}</b><small>${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small></div><span class="amt">${money(x.price || 0)}</span>${ro ? "<span></span>" : `<button class="undo" data-sid="${esc(x.sid)}" data-id="${esc(x.id)}">Undo</button>`}</div>`;
+    rows += `<div class="sale"><div class="w">${esc(p.name || "Pattern")} · <b>${esc(x.size)}</b><small>${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small></div><button class="amt" data-sid="${esc(x.sid)}" data-id="${esc(x.id)}" ${ro ? "disabled" : ""} aria-label="Change price">${money(x.price || 0)}${(x.price || 0) < fullOf(x) ? `<s>${money(fullOf(x))}</s>` : ""}</button>${ro ? "<span></span>" : `<button class="undo" data-sid="${esc(x.sid)}" data-id="${esc(x.id)}">Undo</button>`}</div>`;
   }
   view.innerHTML = `<section class="detail">
     <div><button class="back" id="back">← All patterns</button></div>
     <h2>Sales</h2>
     ${statusHtml()}
     <div class="overview" style="padding:0">
-      <div class="ov sold"><span class="k">All sales</span><span class="v">${sales.length.toLocaleString()} <small>pcs</small></span><span class="d"><b>${money(sum(sales))}</b></span></div>
+      <div class="ov sold"><span class="k">All sales</span><span class="v">${sales.length.toLocaleString()} <small>pcs</small></span><span class="d"><b>${money(sum(sales))}</b></span>${disc ? `<span class="d">Discounts ${money(disc)}</span>` : ""}</div>
       <div class="ov"><span class="k">Today</span><span class="v">${today.length} <small>pcs</small></span><span class="d"><b>${money(sum(today))}</b></span></div>
-      <div class="ov"><span class="k">Kids · ${money(PRICE_KIDS)}</span><span class="v">${kids.length} <small>pcs</small></span><span class="d"><b>${money(sum(kids))}</b></span></div>
-      <div class="ov"><span class="k">Adults · ${money(PRICE_ADULT)}</span><span class="v">${adults.length} <small>pcs</small></span><span class="d"><b>${money(sum(adults))}</b></span></div>
+      <div class="ov"><span class="k">Kids sizes</span><span class="v">${kids.length} <small>pcs</small></span><span class="d"><b>${money(sum(kids))}</b></span></div>
+      <div class="ov"><span class="k">Adult sizes</span><span class="v">${adults.length} <small>pcs</small></span><span class="d"><b>${money(sum(adults))}</b></span></div>
     </div>
     ${byPattern.length ? `<div class="group"><h3><span>By pattern</span></h3><div class="tbl-wrap"><table>
       <thead><tr><th>Pattern</th><th>Kids</th><th>Adults</th><th>Sold</th><th>Amount</th></tr></thead>
       <tbody>${byPattern.map(r => `<tr data-id="${esc(r.id)}" style="cursor:pointer"><td>${esc(r.p.name)}</td><td>${r.k}</td><td>${r.a}</td><td><b>${r.n}</b></td><td>${money(r.amt)}</td></tr>`).join("")}</tbody>
     </table></div></div>` : ""}
-    <div class="group"><h3><span>Recent sales</span><span>${recent.length < sales.length ? `latest ${recent.length}` : ""}</span></h3>
+    ${ro ? "" : `<form class="prices" id="priceForm">
+      <div><b>Prices</b> <span class="hint" style="color:var(--muted);font-size:.85rem">· used for new sales and stock value. Past sales keep the price they were sold at.</span></div>
+      <div class="two">
+        <label for="prKids">Kids (3Y–13Y)<input id="prKids" type="text" inputmode="numeric" value="${pr.kids.toLocaleString("en-US")}"></label>
+        <label for="prAdult">Adults (S–3XL)<input id="prAdult" type="text" inputmode="numeric" value="${pr.adult.toLocaleString("en-US")}"></label>
+      </div>
+      <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn primary" type="submit">Save prices</button><span id="prMsg" class="hint" style="color:var(--muted);font-size:.85rem"></span></div>
+    </form>`}
+    <div class="group"><h3><span>Recent sales</span><span style="text-transform:none;letter-spacing:0;font-weight:500">${ro ? "" : "Tap a price to change it"}</span></h3></h3>
       ${recent.length ? `<div class="sales-list">${rows}</div>` : `<p class="empty">No sales yet. Open a pattern and tap <b>Sell 1</b> on the size you sold. It takes one piece out of stock and records the sale here.</p>`}
     </div>
     <div class="saving" id="saving" aria-live="polite"></div>
@@ -455,6 +532,18 @@ function renderSales() {
   view.querySelectorAll(".undo").forEach(b => b.onclick = () => {
     const x = sales.find(s => s.sid === b.dataset.sid && s.id === b.dataset.id); if (!x) return;
     undoSale(x); renderSales(); setSaving(`Undid sale of ${x.size}. It's back in stock.`);
+  });
+  view.querySelectorAll("button.amt").forEach(b => b.onclick = () => {
+    const x = sales.find(s => s.sid === b.dataset.sid && s.id === b.dataset.id); if (x) editSalePrice(x);
+  });
+  const pf = $("#priceForm");
+  if (pf) pf.addEventListener("submit", async e => {
+    e.preventDefault();
+    const kids = parseAmount($("#prKids").value), adult = parseAmount($("#prAdult").value);
+    if (!kids || !adult) { $("#prMsg").textContent = "Enter a price above 0 for both."; return; }
+    $("#prMsg").textContent = "Saving…";
+    try { await savePrices(kids, adult); renderSales(); const m = $("#prMsg"); if (m) m.textContent = "Prices saved."; }
+    catch { $("#prMsg").textContent = "Couldn't save prices. Try again."; }
   });
 }
 
@@ -476,7 +565,7 @@ function renderForm(id) {
       ${canPhoto ? `<label for="f-photo">Photo <span class="hint">Take one with your phone camera or pick from your gallery.</span>
         <input id="f-photo" type="file" accept="image/*"></label>` : `<p class="hint">Only editors can add photos. You can still add the name now.</p>`}
       <img class="preview" id="pv" alt="" ${p.photo ? `src="${esc(photoSrc(p))}"` : "hidden"}>
-      ${id ? "" : `<p class="hint">All ${SIZES.length} sizes (4Y–13Y and S–3XL) start at 0. Set the counts after saving.</p>`}
+      ${id ? "" : `<p class="hint">All ${SIZES.length} sizes (3Y–13Y and S–3XL) start at 0. Set the counts after saving.</p>`}
       <div class="err" id="ferr"></div>
       <div class="actions" style="border:0;padding:0"><button class="btn primary" id="saveP" type="submit">${id ? "Save changes" : "Add pattern"}</button></div>
     </form></section>`;
@@ -535,6 +624,11 @@ renderChips(); render();
   state.db = db;
   if (user) { try { const c = await user.can("data.write"); if (c === false) state.canWrite = false; else if (c === true) state.canWrite = true; } catch {} }
   const slowT = setTimeout(() => { state.slow = true; render(); }, 10000);
+  db.doc("settings/prices").onSnapshot(d => {
+    state.prices = d.exists ? { kids: Number(d.data().kids) || DEFAULT_PRICES.kids, adult: Number(d.data().adult) || DEFAULT_PRICES.adult } : null;
+    const r = route();
+    if (!state.editing && r !== "new" && !$("#sheet") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#priceForm"))) render();
+  }, () => {});
   db.collection("patterns").onSnapshot(snap => {
     state.patterns = new Map(snap.docs.map(d => [d.id, d.data()]));
     if (!snap.metadata.fromCache) { state.loaded = true; state.slow = false; clearTimeout(slowT); }
