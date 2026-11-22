@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T13:21:58.582Z",
+ "updatedAt": "2026-11-22T13:22:03.599Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -165,7 +165,7 @@
    "sizes": {
     "4Y": 1,
     "5Y": 1,
-    "6Y": 0,
+    "6Y": 1,
     "7Y": 0,
     "8Y": 0,
     "9Y": 0,
@@ -181,7 +181,7 @@
     "3XL": 0,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T13:21:56.714Z"
+   "updatedAt": "2026-11-22T13:22:01.695Z"
   },
   "p08": {
    "name": "Mittens & Snowflakes",
