@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T19:08:26.272Z",
+ "updatedAt": "2026-11-22T19:09:48.078Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -152,15 +152,15 @@
     "11Y": 1,
     "12Y": 1,
     "13Y": 1,
-    "S": 0,
-    "M": 0,
-    "L": 0,
-    "XL": 0,
-    "2XL": 0,
-    "3XL": 0,
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "2XL": 1,
+    "3XL": 1,
     "3Y": 2
    },
-   "updatedAt": "2026-11-22T19:07:32.121Z"
+   "updatedAt": "2026-11-22T19:07:51.759Z"
   },
   "p07": {
    "name": "Merry Christmas Reindeer",
