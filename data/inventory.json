@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T13:16:39.794Z",
+ "updatedAt": "2026-11-22T13:17:03.140Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -278,10 +278,10 @@
     "L": 1,
     "XL": 0,
     "2XL": 0,
-    "3XL": 0,
+    "3XL": 1,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T13:16:37.756Z"
+   "updatedAt": "2026-11-22T13:17:01.226Z"
   },
   "p12": {
    "name": "Penguins & Ornaments",
