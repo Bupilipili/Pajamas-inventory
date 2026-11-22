@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T18:27:42.163Z",
+ "updatedAt": "2026-11-22T18:27:50.346Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -394,7 +394,7 @@
     "10Y": 1,
     "11Y": 1,
     "12Y": 1,
-    "13Y": 0,
+    "13Y": 1,
     "S": 0,
     "M": 0,
     "L": 0,
@@ -403,7 +403,7 @@
     "3XL": 0,
     "3Y": 2
    },
-   "updatedAt": "2026-11-22T18:27:40.305Z"
+   "updatedAt": "2026-11-22T18:27:43.803Z"
   },
   "pmwrw9d1ptkvn": {
    "name": "Red Tartan Button-Short",
