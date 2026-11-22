@@ -125,6 +125,30 @@ th:first-child, td:first-child { text-align: left; position: sticky; left: 0; ba
 thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 td.z { color: var(--berry); }
 tfoot td { font-weight: 700; }
+/* overview + sales */
+.overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-block: 4px 12px; }
+.ov { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 2px; min-width: 0; text-align: left; }
+button.ov { font: inherit; color: inherit; cursor: pointer; }
+.ov .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.ov .v { font-family: var(--f-display); font-size: 1.7rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ov .v small { font-family: var(--f-body); font-size: .8rem; color: var(--muted); font-weight: 500; }
+.ov .d { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ov .d b { color: var(--ink); }
+.ov.sold { border-color: var(--pine); }
+.ov.sold .v { color: var(--pine); }
+.ov .go { font-size: .8rem; color: var(--pine); font-weight: 600; margin-top: 4px; }
+.sellrow { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: .8rem; color: var(--muted); padding-top: 2px; }
+.sellrow b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.sell { border: 0; background: var(--pine); color: var(--on-pine); border-radius: 8px; padding: 6px 10px; font-weight: 600; font-size: .8rem; min-height: 36px; white-space: nowrap; }
+.sell:disabled { opacity: .35; cursor: default; }
+.sales-list { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.sale { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.sale:last-child { border-bottom: 0; }
+.sale .w { min-width: 0; }
+.sale .w small { display: block; color: var(--muted); font-size: .78rem; }
+.sale .amt { font-variant-numeric: tabular-nums; font-weight: 600; }
+.sale .undo { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 6px 10px; font-size: .8rem; min-height: 36px; color: var(--muted); }
+.day { padding: 8px 12px; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line); font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) { .card { transition: transform .15s; } .card:active { transform: scale(.98); } }
 html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; -webkit-text-size-adjust: 100%; }
@@ -180,10 +204,14 @@ const KIDS = ["4Y","5Y","6Y","7Y","8Y","9Y","10Y","11Y","12Y","13Y"];
 const ADULTS = ["S","M","L","XL","2XL","3XL"];
 const SIZES = [...KIDS, ...ADULTS];
 const LOW = 2;
+const PRICE_KIDS = 25000, PRICE_ADULT = 35000;
+const priceOf = k => ADULTS.includes(k) ? PRICE_ADULT : PRICE_KIDS;
+const money = n => Math.round(n).toLocaleString("en-US") + "/=";
 
 const state = {
   patterns: new Map(),   // id -> data
   pending: new Map(),    // id -> {size: n}
+  pendingSales: new Map(), // id -> {saleId: sale}
   loaded: false, error: null, slow: false,
   canWrite: null, assets: null, db: null,
   q: "", filter: "all", showTable: false,
@@ -198,13 +226,21 @@ function sizesOf(id) {
   const p = state.patterns.get(id) || {};
   return { ...(p.sizes || {}), ...(state.pending.get(id) || {}) };
 }
+function salesOf(id) {
+  const p = state.patterns.get(id) || {};
+  const all = { ...(p.sales || {}), ...(state.pendingSales.get(id) || {}) };
+  return Object.entries(all).filter(([, x]) => x && !x.voided).map(([sid, x]) => ({ sid, id, ...x }));
+}
+function soldCount(id, k) { return salesOf(id).filter(x => !k || x.size === k).length; }
+function allSales() { return [...state.patterns.keys()].flatMap(salesOf).sort((a, b) => String(b.t).localeCompare(String(a.t))); }
+const sameDay = (iso, d = new Date()) => { const x = new Date(iso); return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth() && x.getDate() === d.getDate(); };
 function total(id) { const s = sizesOf(id); return SIZES.reduce((a, k) => a + (Number(s[k]) || 0), 0); }
 function inStockCount(id) { const s = sizesOf(id); return SIZES.filter(k => (Number(s[k]) || 0) > 0).length; }
 function sorted() { return [...state.patterns.entries()].sort((a, b) => (a[1].order ?? 999) - (b[1].order ?? 999) || String(a[1].name).localeCompare(b[1].name)); }
 
 /* ---------- chips ---------- */
 function renderChips() {
-  const opts = [["all","All"],["out","Has sold-out sizes"],...SIZES.map(s => [s, s])];
+  const opts = [["all","All"],["out","Has empty sizes"],...SIZES.map(s => [s, s])];
   $("#chips").innerHTML = opts.map(([v, l]) => `<button class="chip" data-f="${v}" aria-pressed="${state.filter === v}">${l}</button>`).join("");
 }
 $("#chips").addEventListener("click", e => {
@@ -220,10 +256,11 @@ function go(h) { if (route() === h) render(); else location.hash = h; }
 
 function render() {
   const r = route();
-  const onList = !(r.startsWith("p-") || r === "new");
+  const onList = !(r.startsWith("p-") || r === "new" || r === "sales");
   $("#searchRow").hidden = !onList; $("#chips").hidden = !onList; $("#backup").hidden = !onList;
   $("#addBtn").hidden = !(onList && state.canWrite !== false && state.db);
   if (r === "new") return renderForm(null);
+  if (r === "sales") return renderSales();
   if (r.startsWith("p-")) {
     const id = r.slice(2);
     if (state.patterns.has(id)) return state.editing ? renderForm(id) : renderDetail(id);
@@ -252,9 +289,20 @@ function renderList() {
   const all = sorted();
   const pieces = all.reduce((a, [id]) => a + total(id), 0);
   const sel = SIZES.includes(state.filter) ? state.filter : null;
-  const summary = `<div class="summary">
+  const stockVal = all.reduce((a, [id]) => { const s = sizesOf(id); return a + SIZES.reduce((x, k) => x + (Number(s[k]) || 0) * priceOf(k), 0); }, 0);
+  const kidsStock = all.reduce((a, [id]) => { const s = sizesOf(id); return a + KIDS.reduce((x, k) => x + (Number(s[k]) || 0), 0); }, 0);
+  const sales = allSales(), today = sales.filter(x => sameDay(x.t));
+  const overview = `<div class="overview">
+    <div class="ov"><span class="k">In stock</span><span class="v">${pieces.toLocaleString()} <small>pcs</small></span>
+      <span class="d">Kids <b>${kidsStock.toLocaleString()}</b> · Adults <b>${(pieces - kidsStock).toLocaleString()}</b></span>
+      <span class="d">Worth <b>${money(stockVal)}</b></span></div>
+    <button class="ov sold" id="salesBtn" type="button"><span class="k">Sold</span><span class="v">${sales.length.toLocaleString()} <small>pcs</small></span>
+      <span class="d">Total <b>${money(sales.reduce((a, x) => a + (x.price || 0), 0))}</b></span>
+      <span class="d">Today <b>${today.length}</b> · ${money(today.reduce((a, x) => a + (x.price || 0), 0))}</span>
+      <span class="go">See sales →</span></button>
+  </div>`;
+  const summary = overview + `<div class="summary">
     <span><b>${all.length}</b> patterns</span>
-    <span><b>${pieces.toLocaleString()}</b> pieces in stock</span>
     ${sel ? `<span><b>${all.reduce((a,[id]) => a + (Number(sizesOf(id)[sel]) || 0), 0)}</b> in size ${sel}</span>` : ""}
     <button class="chip" id="tblBtn" aria-pressed="${state.showTable}">${state.showTable ? "Show photos" : "Table by size"}</button>
   </div>`;
@@ -280,14 +328,15 @@ function renderList() {
 }
 function bindList() {
   view.querySelectorAll(".card").forEach(c => c.addEventListener("click", () => go("p-" + c.dataset.id)));
+  const sb = $("#salesBtn"); if (sb) sb.onclick = () => go("sales");
   const tb = $("#tblBtn"); if (tb) tb.addEventListener("click", () => { state.showTable = !state.showTable; render(); });
   view.querySelectorAll("tr[data-id]").forEach(r => r.addEventListener("click", () => go("p-" + r.dataset.id)));
 }
 function tableHtml(list) {
-  const head = `<tr><th>Pattern</th>${SIZES.map(s => `<th>${s}</th>`).join("")}<th>Total</th></tr>`;
+  const head = `<tr><th>Pattern</th>${SIZES.map(s => `<th>${s}</th>`).join("")}<th>Total</th><th>Sold</th></tr>`;
   const rows = list.map(([id, p]) => { const s = sizesOf(id);
-    return `<tr data-id="${esc(id)}" style="cursor:pointer"><td>${esc(p.name)}</td>${SIZES.map(k => { const v = Number(s[k]) || 0; return `<td class="${v ? "" : "z"}">${v}</td>`; }).join("")}<td><b>${total(id)}</b></td></tr>`; }).join("");
-  const foot = `<tr><td>All</td>${SIZES.map(k => `<td>${list.reduce((a,[id]) => a + (Number(sizesOf(id)[k]) || 0), 0)}</td>`).join("")}<td>${list.reduce((a,[id]) => a + total(id), 0)}</td></tr>`;
+    return `<tr data-id="${esc(id)}" style="cursor:pointer"><td>${esc(p.name)}</td>${SIZES.map(k => { const v = Number(s[k]) || 0; return `<td class="${v ? "" : "z"}">${v}</td>`; }).join("")}<td><b>${total(id)}</b></td><td>${soldCount(id)}</td></tr>`; }).join("");
+  const foot = `<tr><td>All</td>${SIZES.map(k => `<td>${list.reduce((a,[id]) => a + (Number(sizesOf(id)[k]) || 0), 0)}</td>`).join("")}<td>${list.reduce((a,[id]) => a + total(id), 0)}</td><td>${list.reduce((a,[id]) => a + soldCount(id), 0)}</td></tr>`;
   return `<div class="tbl-wrap"><table><thead>${head}</thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot></table></div>`;
 }
 
@@ -295,12 +344,13 @@ function tableHtml(list) {
 function sizeTile(id, k, ro) {
   const v = Number(sizesOf(id)[k]) || 0;
   const cls = v === 0 ? "out" : v <= LOW ? "low" : "";
-  const tag = v === 0 ? "Sold out" : v <= LOW ? "Low" : "";
+  const tag = v === 0 ? "Out of stock" : v <= LOW ? "Low" : "";
   return `<div class="size ${cls}" data-k="${k}">
     <div class="lbl"><span>${k}</span><em>${tag}</em></div>
     <button class="step" data-d="-1" aria-label="One less ${k}" ${ro || v === 0 ? "disabled" : ""}>−</button>
     <input id="sz-${k}" type="number" inputmode="numeric" min="0" step="1" value="${v}" aria-label="Pieces in size ${k}" ${ro ? "disabled" : ""}>
     <button class="step" data-d="1" aria-label="One more ${k}" ${ro ? "disabled" : ""}>+</button>
+    <div class="sellrow"><span>Sold <b class="soldN">${soldCount(id, k)}</b></span>${ro ? "" : `<button class="sell" ${v === 0 ? "disabled" : ""} aria-label="Sell one ${k} for ${money(priceOf(k))}">Sell 1</button>`}</div>
   </div>`;
 }
 function renderDetail(id) {
@@ -316,11 +366,12 @@ function renderDetail(id) {
         ${p.code ? `<div class="sub">${esc(p.code)}</div>` : ""}
         <h2>${esc(p.name)}</h2>
         <div class="big" id="bigTotal">${total(id)} <span>pieces · ${inStockCount(id)} of ${SIZES.length} sizes in stock</span></div>
+        <div class="sub" id="heroSold">${heroSold(id)}</div>
       </div>
     </div>
     ${statusHtml()}
-    <div class="group"><h3><span>Kids · years</span><span id="kidsT">${kidsT} pcs</span></h3><div class="sizes">${KIDS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
-    <div class="group"><h3><span>Adults</span><span id="adT">${adT} pcs</span></h3><div class="sizes">${ADULTS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="group"><h3><span>Kids · years · ${money(PRICE_KIDS)} each</span><span id="kidsT">${kidsT} pcs</span></h3><div class="sizes">${KIDS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
+    <div class="group"><h3><span>Adults · ${money(PRICE_ADULT)} each</span><span id="adT">${adT} pcs</span></h3><div class="sizes">${ADULTS.map(k => sizeTile(id, k, ro)).join("")}</div></div>
     <div class="saving" id="saving" aria-live="polite"></div>
     ${ro ? "" : `<div class="actions">
       <button class="btn" id="editBtn">Edit name or photo</button>
@@ -332,18 +383,23 @@ function renderDetail(id) {
     tile.querySelectorAll(".step").forEach(b => b.onclick = () => setCount(id, k, (Number(sizesOf(id)[k]) || 0) + Number(b.dataset.d)));
     inp.addEventListener("change", () => setCount(id, k, inp.value));
     inp.addEventListener("focus", () => inp.select());
+    const sb = $(".sell", tile); if (sb) sb.onclick = () => sell(id, k);
   });
   const eb = $("#editBtn"); if (eb) eb.onclick = () => { state.editing = true; render(); };
 }
+function heroSold(id) { const s = salesOf(id); return `Sold ${s.length} · ${money(s.reduce((a, x) => a + (x.price || 0), 0))}`; }
 function patchDetail(id) {
   // update numbers in place without stealing focus
   view.querySelectorAll(".size").forEach(tile => {
     const k = tile.dataset.k, v = Number(sizesOf(id)[k]) || 0, inp = $("input", tile);
     if (document.activeElement !== inp) inp.value = v;
     tile.className = "size " + (v === 0 ? "out" : v <= LOW ? "low" : "");
-    $(".lbl em", tile).textContent = v === 0 ? "Sold out" : v <= LOW ? "Low" : "";
+    $(".lbl em", tile).textContent = v === 0 ? "Out of stock" : v <= LOW ? "Low" : "";
     const minus = $('.step[data-d="-1"]', tile); if (!inp.disabled) minus.disabled = v === 0;
+    $(".soldN", tile).textContent = soldCount(id, k);
+    const sb = $(".sell", tile); if (sb) sb.disabled = v === 0;
   });
+  const hs = $("#heroSold"); if (hs) hs.textContent = heroSold(id);
   const s = sizesOf(id);
   const bt = $("#bigTotal"); if (bt) bt.innerHTML = `${total(id)} <span>pieces · ${inStockCount(id)} of ${SIZES.length} sizes in stock</span>`;
   const kt = $("#kidsT"); if (kt) kt.textContent = KIDS.reduce((a, k) => a + (Number(s[k]) || 0), 0) + " pcs";
@@ -352,6 +408,20 @@ function patchDetail(id) {
 
 /* ---------- saving counts: one write at a time per pattern ---------- */
 const timers = new Map(), inflight = new Set();
+const newSaleId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function queueSale(id, sid, sale) {
+  const ps = state.pendingSales.get(id) || {}; ps[sid] = sale; state.pendingSales.set(id, ps);
+}
+function sell(id, k) {
+  const v = Number(sizesOf(id)[k]) || 0; if (v <= 0) return;
+  queueSale(id, newSaleId(), { t: new Date().toISOString(), size: k, price: priceOf(k) });
+  setCount(id, k, v - 1);
+  setSaving(`Sold 1 × ${k} for ${money(priceOf(k))}`);
+}
+function undoSale(x) {
+  queueSale(x.id, x.sid, { t: x.t, size: x.size, price: x.price, voided: true });
+  setCount(x.id, x.size, (Number(sizesOf(x.id)[x.size]) || 0) + 1);
+}
 function setCount(id, k, raw) {
   let v = Math.max(0, Math.floor(Number(raw)));
   if (!Number.isFinite(v)) v = 0;
@@ -362,14 +432,21 @@ function setCount(id, k, raw) {
 }
 async function flush(id) {
   if (inflight.has(id)) { timers.set(id, setTimeout(() => flush(id), 300)); return; }
-  const pend = state.pending.get(id); if (!pend) return;
-  const batch = { ...pend };
+  const pend = state.pending.get(id), ps = state.pendingSales.get(id);
+  if (!pend && !ps) return;
+  const batch = { ...(pend || {}) }, sbatch = { ...(ps || {}) };
   inflight.add(id);
   try {
-    await state.db.doc("patterns/" + id).update({ sizes: batch, updatedAt: new Date().toISOString() });
+    const upd = { updatedAt: new Date().toISOString() };
+    if (Object.keys(batch).length) upd.sizes = batch;
+    if (Object.keys(sbatch).length) upd.sales = sbatch;
+    await state.db.doc("patterns/" + id).update(upd);
     const cur = state.pending.get(id) || {};
     for (const k in batch) if (cur[k] === batch[k]) delete cur[k];
     if (Object.keys(cur).length) state.pending.set(id, cur); else state.pending.delete(id);
+    const cs = state.pendingSales.get(id) || {};
+    for (const k in sbatch) if (cs[k] === sbatch[k]) delete cs[k];
+    if (Object.keys(cs).length) state.pendingSales.set(id, cs); else state.pendingSales.delete(id);
     setSaving("Saved");
   } catch (e) {
     if (e && e.code === "invalid_argument" && state.canWrite == null) { state.canWrite = false; state.pending.delete(id); render(); }
@@ -377,6 +454,49 @@ async function flush(id) {
   } finally { inflight.delete(id); }
 }
 function setSaving(t) { const el = $("#saving"); if (el) el.textContent = t; }
+
+/* ---------- sales page ---------- */
+function renderSales() {
+  const sales = allSales();
+  const sum = xs => xs.reduce((a, x) => a + (x.price || 0), 0);
+  const today = sales.filter(x => sameDay(x.t));
+  const kids = sales.filter(x => KIDS.includes(x.size)), adults = sales.filter(x => ADULTS.includes(x.size));
+  const ro = state.canWrite === false || !state.db;
+  const byPattern = sorted().map(([id, p]) => { const s = salesOf(id); return { id, p, n: s.length, k: s.filter(x => KIDS.includes(x.size)).length, a: s.filter(x => ADULTS.includes(x.size)).length, amt: sum(s) }; }).filter(r => r.n).sort((a, b) => b.n - a.n);
+  const recent = sales.slice(0, 100);
+  let lastDay = "", rows = "";
+  for (const x of recent) {
+    const d = new Date(x.t), day = d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    if (day !== lastDay) { rows += `<div class="day">${sameDay(x.t) ? "Today" : esc(day)}</div>`; lastDay = day; }
+    const p = state.patterns.get(x.id) || {};
+    rows += `<div class="sale"><div class="w">${esc(p.name || "Pattern")} · <b>${esc(x.size)}</b><small>${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small></div><span class="amt">${money(x.price || 0)}</span>${ro ? "<span></span>" : `<button class="undo" data-sid="${esc(x.sid)}" data-id="${esc(x.id)}">Undo</button>`}</div>`;
+  }
+  view.innerHTML = `<section class="detail">
+    <div><button class="back" id="back">← All patterns</button></div>
+    <h2>Sales</h2>
+    ${statusHtml()}
+    <div class="overview" style="padding:0">
+      <div class="ov sold"><span class="k">All sales</span><span class="v">${sales.length.toLocaleString()} <small>pcs</small></span><span class="d"><b>${money(sum(sales))}</b></span></div>
+      <div class="ov"><span class="k">Today</span><span class="v">${today.length} <small>pcs</small></span><span class="d"><b>${money(sum(today))}</b></span></div>
+      <div class="ov"><span class="k">Kids · ${money(PRICE_KIDS)}</span><span class="v">${kids.length} <small>pcs</small></span><span class="d"><b>${money(sum(kids))}</b></span></div>
+      <div class="ov"><span class="k">Adults · ${money(PRICE_ADULT)}</span><span class="v">${adults.length} <small>pcs</small></span><span class="d"><b>${money(sum(adults))}</b></span></div>
+    </div>
+    ${byPattern.length ? `<div class="group"><h3><span>By pattern</span></h3><div class="tbl-wrap"><table>
+      <thead><tr><th>Pattern</th><th>Kids</th><th>Adults</th><th>Sold</th><th>Amount</th></tr></thead>
+      <tbody>${byPattern.map(r => `<tr data-id="${esc(r.id)}" style="cursor:pointer"><td>${esc(r.p.name)}</td><td>${r.k}</td><td>${r.a}</td><td><b>${r.n}</b></td><td>${money(r.amt)}</td></tr>`).join("")}</tbody>
+    </table></div></div>` : ""}
+    <div class="group"><h3><span>Recent sales</span><span>${recent.length < sales.length ? `latest ${recent.length}` : ""}</span></h3>
+      ${recent.length ? `<div class="sales-list">${rows}</div>` : `<p class="empty">No sales yet. Open a pattern and tap <b>Sell 1</b> on the size you sold. It takes one piece out of stock and records the sale here.</p>`}
+    </div>
+    <div class="saving" id="saving" aria-live="polite"></div>
+  </section>`;
+  $("#back").onclick = () => go("");
+  view.querySelectorAll("tr[data-id]").forEach(r => r.onclick = () => go("p-" + r.dataset.id));
+  view.querySelectorAll(".undo").forEach(b => b.onclick = () => {
+    const x = sales.find(s => s.sid === b.dataset.sid && s.id === b.dataset.id); if (!x) return;
+    undoSale(x); renderSales(); setSaving(`Undid sale of ${x.size}. It's back in stock.`);
+  });
+}
 
 async function deletePattern(id) {
   try { await state.db.doc("patterns/" + id).delete(); state.patterns.delete(id); go(""); }
