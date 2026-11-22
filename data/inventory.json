@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T18:35:50.229Z",
+ "updatedAt": "2026-11-22T18:41:27.743Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -64,23 +64,23 @@
    "order": 3,
    "sizes": {
     "4Y": 0,
-    "5Y": 0,
-    "6Y": 0,
-    "7Y": 0,
-    "8Y": 0,
+    "5Y": 1,
+    "6Y": 2,
+    "7Y": 1,
+    "8Y": 1,
     "9Y": 1,
     "10Y": 1,
     "11Y": 1,
     "12Y": 1,
     "13Y": 1,
-    "S": 0,
+    "S": 1,
     "M": 0,
     "L": 0,
-    "XL": 0,
+    "XL": 1,
     "2XL": 0,
     "3XL": 0
    },
-   "updatedAt": "2026-11-22T14:11:25.774Z"
+   "updatedAt": "2026-11-22T18:36:10.368Z"
   },
   "p04": {
    "name": "Red Tartan Button-Trouser",
@@ -331,8 +331,8 @@
    "photo": "img/13.jpg",
    "order": 13,
    "sizes": {
-    "4Y": 1,
-    "5Y": 1,
+    "4Y": 2,
+    "5Y": 2,
     "6Y": 1,
     "7Y": 0,
     "8Y": 1,
@@ -347,9 +347,9 @@
     "XL": 0,
     "2XL": 0,
     "3XL": 0,
-    "3Y": 1
+    "3Y": 2
    },
-   "updatedAt": "2026-11-22T14:07:44.012Z"
+   "updatedAt": "2026-11-22T18:41:18.948Z"
   },
   "p14": {
    "name": "Howdy Holidays",
