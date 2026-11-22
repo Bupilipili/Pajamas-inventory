@@ -132,13 +132,16 @@ img { max-width: 100%; }
 [hidden] { display: none !important; }
 footer.backup { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; color: var(--muted); font-size: .85rem; }
 footer.backup .row { display: flex; flex-wrap: wrap; gap: 8px; }
+footer.backup a { color: var(--pine); }
+.syncbox { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; color: var(--ink); }
+.sync-ok { color: var(--pine); font-weight: 600; } .sync-warn { color: var(--amber); font-weight: 600; } .sync-bad { color: var(--berry); font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Pajama Stockroom<small id="sub">Christmas collection · saved on this phone</small></h1>
+      <h1>Pajama Stockroom<small id="sub">Christmas collection · <span id="subSync">not synced</span></small></h1>
       <button class="btn primary" id="addBtn" hidden>+ Pattern</button>
     </div>
     <div class="search" id="searchRow">
@@ -148,7 +151,21 @@ footer.backup .row { display: flex; flex-wrap: wrap; gap: 8px; }
   </header>
   <main id="view"></main>
   <footer class="backup" id="backup">
-    <div><b style="color:var(--ink)">Backup</b> · Counts are saved in this browser only. Save a backup file now and then so you don't lose them if the browser data is cleared.</div>
+    <div class="syncbox">
+      <div><b style="color:var(--ink)">Sync across devices</b> · <span id="syncState">Not connected</span></div>
+      <div id="connectArea">
+        <p style="margin:0 0 8px">Counts are saved to <code>data/inventory.json</code> in your GitHub repo, so your phone and computer show the same numbers. Each device needs a GitHub token once:</p>
+        <ol style="margin:0 0 8px;padding-left:20px">
+          <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+          <li>Name it "Pajama Stockroom", set an expiration, and under <b>Repository access</b> pick <b>Only select repositories</b> → <b>Pajamas-inventory</b>.</li>
+          <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+          <li>Tap <b>Generate token</b>, copy it, and paste it here.</li>
+        </ol>
+        <div class="row"><input id="tokenIn" type="password" placeholder="github_pat_…" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;background:var(--surface)"><button class="btn primary" id="connectBtn" type="button">Connect</button></div>
+      </div>
+      <div class="row" id="connectedArea" hidden><button class="btn" id="syncBtn" type="button">Sync now</button><button class="btn" id="disconnectBtn" type="button">Disconnect this device</button></div>
+    </div>
+    <div style="margin-top:12px"><b style="color:var(--ink)">Backup file</b> · Optional extra copy you can keep.</div>
     <div class="row">
       <button class="btn" id="exportBtn" type="button">Save backup file</button>
       <label class="btn" for="importFile" style="display:inline-flex;align-items:center">Restore from backup</label>
@@ -462,9 +479,9 @@ const merge = (a, b) => { for (const k in b) a[k] = (b[k] && typeof b[k] === "ob
 const newId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const docRef = id => ({
   id,
-  async set(d) { store[id] = d; persist(); publish(); },
-  async update(d) { if (!store[id]) throw { code: "invalid_argument" }; store[id] = merge({ ...store[id] }, d); persist(); publish(); },
-  async delete() { delete store[id]; persist(); publish(); },
+  async set(d) { store[id] = d; markDirty(id, { __set: d }); persist(); publish(); },
+  async update(d) { if (!store[id]) throw { code: "invalid_argument" }; store[id] = merge({ ...store[id] }, d); markDirty(id, d); persist(); publish(); },
+  async delete() { delete store[id]; markDirty(id, { __deleted: true }); persist(); publish(); },
 });
 const localDb = {
   doc: path => docRef(path.split("/")[1]),
@@ -474,6 +491,113 @@ const localAssets = {
   // photos are stored inline as small JPEG data URLs
   async upload(blob) { return { id: await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); }) }; },
 };
+
+
+/* ---------- GitHub sync: inventory.json on the inventory-data branch ---------- */
+const GH = { owner: "Bupilipili", repo: "Pajamas-inventory", branch: "ccr-e63aabea-x1neq2", path: "data/inventory.json" };
+const TOKEN_KEY = "pajama-stockroom-token", DIRTY_KEY = "pajama-stockroom-dirty", FIRST_KEY = "pajama-stockroom-synced-once";
+const ls = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
+let token = ls.get(TOKEN_KEY) || "";
+let dirty = {}; try { dirty = JSON.parse(ls.get(DIRTY_KEY)) || {}; } catch {}
+let syncing = false, again = false, syncTimer = null, lastSynced = null;
+const clone = o => JSON.parse(JSON.stringify(o));
+function mergeDirty(into, id, patch) {
+  const cur = into[id];
+  if (patch.__deleted || patch.__set) into[id] = clone(patch);
+  else if (cur && cur.__set) into[id] = { __set: merge(clone(cur.__set), clone(patch)) };
+  else if (cur && cur.__deleted) {}
+  else into[id] = merge(cur ? clone(cur) : {}, clone(patch));
+}
+function markDirty(id, patch) { mergeDirty(dirty, id, patch); ls.set(DIRTY_KEY, JSON.stringify(dirty)); scheduleSync(1200); }
+function applyDirty(base, d) {
+  for (const id in d) {
+    const p = d[id];
+    if (p.__deleted) delete base[id];
+    else if (p.__set) base[id] = clone(p.__set);
+    else if (base[id]) base[id] = merge(clone(base[id]), clone(p));
+    else if (store[id]) base[id] = clone(store[id]);
+  }
+  return base;
+}
+const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), c => c.charCodeAt(0)));
+const apiUrl = () => `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+async function gh(method, body, accept) {
+  const r = await fetch(apiUrl() + (method === "GET" ? `?ref=${GH.branch}&t=${Date.now()}` : ""), {
+    method, cache: "no-store",
+    headers: { Authorization: "Bearer " + token, Accept: accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return r;
+}
+async function pull() {
+  const r = await gh("GET");
+  if (r.status === 404) return { sha: null, data: null };
+  if (!r.ok) throw { status: r.status };
+  const j = await r.json();
+  let text = j.encoding === "base64" && j.content ? b64dec(j.content) : null;
+  if (text == null) { const rr = await gh("GET", null, "application/vnd.github.raw+json"); if (!rr.ok) throw { status: rr.status }; text = await rr.text(); }
+  return { sha: j.sha, data: JSON.parse(text) };
+}
+const totalOf = st => Object.values(st || {}).reduce((a, p) => a + SIZES.reduce((x, k) => x + (Number(p.sizes && p.sizes[k]) || 0), 0), 0);
+function setSync(text, cls) {
+  const el = $("#syncState"); el.textContent = text; el.className = cls || "";
+  const sub = $("#subSync"); sub.textContent = text; sub.className = cls || "";
+}
+function showSyncUi() { $("#connectArea").hidden = !!token; $("#connectedArea").hidden = !token; }
+function scheduleSync(ms) { if (!token) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, ms); }
+async function syncNow() {
+  if (!token) { setSync(Object.keys(dirty).length ? "Not synced · saved on this device only" : "Not synced · saved on this device only", "sync-warn"); return; }
+  if (syncing) { again = true; return; }
+  if (!navigator.onLine) { setSync("Offline · will sync when you're back online", "sync-warn"); return; }
+  syncing = true; clearTimeout(syncTimer);
+  const pendingIds = Object.keys(dirty).length;
+  if (pendingIds) setSync("Saving to GitHub…", "");
+  let snap = dirty; dirty = {};
+  try {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const remote = await pull();
+      let base = remote.data && remote.data.patterns;
+      const first = !ls.get(FIRST_KEY);
+      if (!base || (first && totalOf(base) === 0 && totalOf(store) > 0)) {
+        // nothing useful on GitHub yet: upload what this device has
+        base = clone(store);
+      } else if (!Object.keys(snap).length) {
+        store = clone(base); persist(); publish();
+        ls.set(FIRST_KEY, "1"); lastSynced = new Date(); break;
+      }
+      const merged = applyDirty(clone(base), snap);
+      const r = await gh("PUT", { message: "Update pajama counts", branch: GH.branch, content: b64enc(JSON.stringify({ app: "pajama-stockroom", updatedAt: new Date().toISOString(), patterns: merged }, null, 1)), ...(remote.sha ? { sha: remote.sha } : {}) });
+      if (r.status === 409 || r.status === 422) continue; // someone else saved first: re-read and retry
+      if (!r.ok) throw { status: r.status };
+      // keep edits made while this save was in flight on top
+      store = applyDirty(clone(merged), dirty); persist(); publish();
+      snap = {}; ls.set(FIRST_KEY, "1"); lastSynced = new Date(); break;
+    }
+    if (Object.keys(snap).length) throw { status: 409 };
+    setSync("Synced · " + lastSynced.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }), "sync-ok");
+  } catch (e) {
+    for (const id in snap) { const later = dirty[id]; dirty[id] = snap[id]; if (later) mergeDirty(dirty, id, later); }
+    const st = e && e.status;
+    if (st === 401) setSync("GitHub token expired or wrong · disconnect and add a new one", "sync-bad");
+    else if (st === 403 || st === 404) setSync("Token can't write to Pajamas-inventory · check its Contents permission", "sync-bad");
+    else setSync("Couldn't reach GitHub · changes are kept and will sync later", "sync-warn");
+    scheduleSync(30000);
+  } finally {
+    ls.set(DIRTY_KEY, Object.keys(dirty).length ? JSON.stringify(dirty) : null);
+    syncing = false;
+    if (again) { again = false; scheduleSync(300); }
+  }
+}
+$("#connectBtn").onclick = async () => {
+  const t = $("#tokenIn").value.trim(); if (!t) return;
+  token = t; ls.set(TOKEN_KEY, t); $("#tokenIn").value = ""; showSyncUi(); setSync("Connecting…", ""); await syncNow();
+};
+$("#disconnectBtn").onclick = () => { token = ""; ls.set(TOKEN_KEY, null); showSyncUi(); setSync("Not synced · saved on this device only", "sync-warn"); };
+$("#syncBtn").onclick = () => syncNow();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncNow(); });
+window.addEventListener("online", () => syncNow());
+setInterval(() => { if (document.visibilityState === "visible" && !state.editing) syncNow(); }, 45000);
 
 /* ---------- backup ---------- */
 $("#exportBtn").onclick = () => {
@@ -487,7 +611,7 @@ $("#importFile").onchange = async e => {
   try {
     const d = JSON.parse(await f.text());
     if (!d || typeof d.patterns !== "object") throw 0;
-    store = d.patterns; persist(); publish();
+    store = d.patterns; for (const id in store) markDirty(id, { __set: store[id] }); persist(); publish();
     $("#backupMsg").textContent = `Restored ${Object.keys(store).length} patterns from ${f.name}.`;
   } catch { $("#backupMsg").textContent = "That file isn't a Pajama Stockroom backup."; }
   e.target.value = "";
@@ -496,7 +620,7 @@ $("#importFile").onchange = async e => {
 /* ---------- boot ---------- */
 state.db = localDb; state.assets = localAssets; state.canWrite = true; state.loaded = true;
 if (!storageOk) state.error = "This browser won't save data (private mode?). Changes will be lost when you close the page.";
-renderChips(); persist(); publish();
+renderChips(); persist(); publish(); showSyncUi(); syncNow();
 </script>
 </body>
 </html>

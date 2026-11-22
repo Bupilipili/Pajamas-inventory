@@ -9,4 +9,4 @@ The app (`app/index.html`, photos in `app/img/`) is published as a claude.ai art
 
 ## GitHub Pages version
 
-`docs/` is a standalone copy for GitHub Pages. It saves counts in the phone's browser (no account or server), with a backup/restore file option at the bottom of the patterns list.
+`docs/` is a standalone copy for GitHub Pages. Counts are saved to `data/inventory.json` on this branch through the GitHub API, so every device shows the same numbers. Each device connects once with a fine-grained GitHub token (Contents: read and write, this repo only), entered at the bottom of the patterns list. Without a token, counts stay in that browser only.
