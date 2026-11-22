@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T13:39:40.285Z",
+ "updatedAt": "2026-11-22T13:39:42.844Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -302,7 +302,7 @@
     "6Y": 0,
     "7Y": 0,
     "8Y": 0,
-    "9Y": 0,
+    "9Y": 1,
     "10Y": 0,
     "11Y": 0,
     "12Y": 0,
@@ -315,7 +315,7 @@
     "3XL": 0,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T13:39:37.712Z"
+   "updatedAt": "2026-11-22T13:39:40.498Z"
   },
   "p13": {
    "name": "Happy New Year Bears",
