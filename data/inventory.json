@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T13:28:38.459Z",
+ "updatedAt": "2026-11-22T13:28:40.816Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -114,8 +114,8 @@
    "sizes": {
     "4Y": 1,
     "5Y": 1,
-    "6Y": 0,
-    "7Y": 0,
+    "6Y": 1,
+    "7Y": 1,
     "8Y": 0,
     "9Y": 0,
     "10Y": 0,
@@ -130,7 +130,7 @@
     "3XL": 0,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T13:28:35.991Z"
+   "updatedAt": "2026-11-22T13:28:39.641Z"
   },
   "p06": {
    "name": "Fair Isle Snowmen",
