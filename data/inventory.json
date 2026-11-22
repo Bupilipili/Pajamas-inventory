@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-22T14:07:34.786Z",
+ "updatedAt": "2026-11-22T14:07:37.903Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -332,7 +332,7 @@
     "5Y": 1,
     "6Y": 1,
     "7Y": 0,
-    "8Y": 0,
+    "8Y": 1,
     "9Y": 0,
     "10Y": 0,
     "11Y": 0,
@@ -346,7 +346,7 @@
     "3XL": 0,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T14:07:33.375Z"
+   "updatedAt": "2026-11-22T14:07:35.968Z"
   },
   "p14": {
    "name": "Howdy Holidays",
