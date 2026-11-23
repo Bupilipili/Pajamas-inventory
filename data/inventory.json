@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-23T14:53:24.357Z",
+ "updatedAt": "2026-11-23T14:53:53.530Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -445,7 +445,7 @@
     "7Y": 1,
     "8Y": 2,
     "9Y": 1,
-    "10Y": 0,
+    "10Y": 1,
     "11Y": 1,
     "12Y": 0,
     "13Y": 1,
@@ -456,7 +456,7 @@
     "2XL": 1,
     "3XL": 0
    },
-   "updatedAt": "2026-11-23T14:53:20.080Z"
+   "updatedAt": "2026-11-23T14:53:49.734Z"
   },
   "pmws77yxz0pyy": {
    "name": "Horns jingle",
