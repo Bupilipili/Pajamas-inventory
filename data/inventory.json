@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-24T07:00:36.674Z",
+ "updatedAt": "2026-11-26T18:58:06.658Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -359,7 +359,7 @@
    "photo": "img/14.jpg",
    "order": 14,
    "sizes": {
-    "4Y": 2,
+    "4Y": 1,
     "5Y": 2,
     "6Y": 2,
     "7Y": 2,
@@ -377,7 +377,7 @@
     "3XL": 1,
     "3Y": 2
    },
-   "updatedAt": "2026-11-22T18:32:54.141Z"
+   "updatedAt": "2026-11-26T18:58:03.777Z"
   },
   "p15": {
    "name": "Christmas Tree",
