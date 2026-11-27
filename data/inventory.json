@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-26T18:58:12.566Z",
+ "updatedAt": "2026-11-27T04:50:03.103Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -423,14 +423,22 @@
     "11Y": 1,
     "12Y": 1,
     "13Y": 1,
-    "S": 1,
+    "S": 0,
     "M": 1,
     "L": 1,
     "XL": 0,
     "2XL": 1,
     "3XL": 0
    },
-   "updatedAt": "2026-11-22T19:18:55.721Z"
+   "updatedAt": "2026-11-27T04:49:58.730Z",
+   "sales": {
+    "smwyi5sjwpss3": {
+     "t": "2026-11-27T04:49:58.220Z",
+     "size": "S",
+     "price": 35000,
+     "full": 35000
+    }
+   }
   },
   "pmws5y5eicsw0": {
    "name": "Santa_colar",
