@@ -1,6 +1,6 @@
 {
  "app": "pajama-stockroom",
- "updatedAt": "2026-11-27T04:54:28.632Z",
+ "updatedAt": "2026-11-27T15:43:25.363Z",
  "patterns": {
   "p01": {
    "name": "Santa & Candy Canes",
@@ -289,14 +289,22 @@
     "12Y": 1,
     "13Y": 1,
     "S": 1,
-    "M": 1,
+    "M": 0,
     "L": 1,
     "XL": 1,
     "2XL": 1,
     "3XL": 1,
     "3Y": 1
    },
-   "updatedAt": "2026-11-22T18:47:49.415Z"
+   "updatedAt": "2026-11-27T15:43:20.714Z",
+   "sales": {
+    "smwz5i101jvlv": {
+     "t": "2026-11-27T15:43:20.209Z",
+     "size": "M",
+     "price": 35000,
+     "full": 35000
+    }
+   }
   },
   "p12": {
    "name": "Penguins & Ornaments",
